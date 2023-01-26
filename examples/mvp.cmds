@@ -1,0 +1,7 @@
+sayHello = (name) {
+  $ echo "Hello {{ name }}!"
+}
+
+sayHello("Ben")
+
+return 0

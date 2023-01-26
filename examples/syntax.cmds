@@ -1,0 +1,146 @@
+// Multi Line Strings
+greeting = """
+  Hello
+  World!
+""" // "Hello\nWorld!"
+
+// Simpele Command
+$ echo "Hello World!"
+
+
+// Command Template
+$ echo "Hello {{ name }}!"
+
+
+// Multi Line Command
+$ echo "Hello" \
+       "World!"
+
+
+// Command Result
+greeting = $ echo "Hello World!"
+greeting.stdout // "Hello World!"
+greeting.stderr // ""
+greeting.code // 0
+
+
+// Async Command
+greeting = % echo "Hello World!"
+greeting!.stdout // "Hello World!"
+greeting!.stderr // ""
+greeting!.code // 0
+
+
+// Variable
+variable = "variable"
+
+
+// Simple Function
+sayHi = () {
+  $ echo "Hello World!"
+}
+
+sayHi()
+
+
+// Function With Args
+add = (arg1, arg2) {
+  return arg1 + arg2
+}
+
+add(40, 2)
+
+
+// Simple Object
+object = {
+  hello = "Hello"
+  world = "World"
+}
+
+hello = object.hello
+
+
+// Object with Functions
+greeter = {
+  sayHello = () {
+    $ echo Hello World!
+  }
+}
+
+greeter.sayHello()
+
+
+// Computed Objects
+a = 40
+b = 2
+total = {
+  result = a + b
+  resultSquared = result ^ 2
+}
+
+// Class
+person = (firstName, lastName) {
+  fullName = () {
+    return "{{ firstName }} {{ lastName }}"
+  }
+}
+
+ben = person("Ben", "Heidemann")
+
+ben.firstName // "Ben"
+ben.lastName // "Heidemann"
+ben.fullName // "Ben Heidemann"
+
+
+// Computed Variables
+numbers = [1, 2, 3, 4]
+sum = {
+  current = 0
+  numbers.forEach((number) {
+    current += number
+  })
+  return current
+}
+
+
+// Control Flows - if
+a = 1
+b = 2
+min = {
+  if a < b {
+    return a
+  }
+  else if b < a {
+    return b
+  }
+  else {
+    return "neither is smaller"
+  }
+}
+
+
+// Symbols
+__result__ = #Result
+
+
+// Inbuilt
+__result__
+ok(value)
+error(value)
+isOk(value)
+isError(value)
+
+__option__
+some(value)
+none
+isSome(value)
+isNone(value)
+
+exit(code)
+panic(message)
+
+
+// Curried Functions???
+add = (a) { return (b) { return a + b } }
+
+

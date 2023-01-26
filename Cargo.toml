@@ -1,0 +1,7 @@
+[package]
+name = "command-script"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+command_script_lexer = { path = "./crates/command_script_lexer" }
