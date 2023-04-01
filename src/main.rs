@@ -1,4 +1,4 @@
-use command_script_lexer::test;
+use lexer::test;
 
 fn main() {
     test();
