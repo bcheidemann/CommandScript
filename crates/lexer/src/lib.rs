@@ -228,6 +228,44 @@ impl Reader for NumberReader {
     }
 }
 
+struct StringReader;
+
+impl Reader for StringReader {
+    fn name(&self) -> String {
+        "StringReader".to_string()
+    }
+
+    fn read(&self, state: &mut ReaderState) -> ReaderResult {
+        let mut value = String::new();
+
+        // Check if the first character is a double quote
+        if !peek_char!(state, '"') {
+            return ReaderResult::None;
+        }
+
+        read_char!(state, '"');
+
+        // Read all characters until the next unescaped double quote
+        while let Some(char) = state.clone().peek() {
+            read_char!(state, *char);
+            match char {
+                '\\' if peek_char!(state, '"') => {
+                    value.push(read_char!(state, '"'));
+                },
+                '"' => break,
+                _ => value.push(*char),
+            }
+        }
+
+        return ReaderResult::Token(Token {
+            kind: TokenKind::String,
+            start: state.get_start(),
+            end: state.get_position(),
+            value: TokenValue::String(value),
+        });
+    }
+}
+
 struct OperatorReader;
 
 impl OperatorReader {
@@ -768,6 +806,7 @@ pub fn test() {
         .add_reader(KeywordReader)
         .add_reader(IdentifierReader)
         .add_reader(NumberReader)
+        .add_reader(StringReader)
         .add_reader(OperatorReader)
         .add_reader(CommandReader)
         .add_reader(NewLineReader)
@@ -777,6 +816,10 @@ pub fn test() {
     let source = "\
         Ident ident ident_snake identCamel ident123
         123 123.456 123. 123.456
+        \"\" \"Hello World\" \"Hello \\\"World\\\"!\" \"multi
+        line
+        string\"
+        true false
         + - * / % ^ & | && || ! .. < << > >>
         ( ) { } [ ]
         = == += -= *= /= %= ^= <= <<= >= >>= &= &&= |= ||= !=

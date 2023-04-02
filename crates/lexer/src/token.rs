@@ -4,6 +4,7 @@ pub enum TokenKind {
     Identifier,
     String,
     Number,
+    Boolean,
     Command,
     Equals,
     EqualsEquals,
