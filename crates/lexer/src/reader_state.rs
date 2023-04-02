@@ -29,6 +29,26 @@ impl ReaderState {
   pub fn did_advance(&self) -> bool {
     self.position_start != self.position_current
   }
+
+  pub fn consume_whitespace(&mut self) {
+    while let Some(ch) = self.peek() {
+      if !ch.is_whitespace() {
+        break;
+      }
+      self.read();
+    }
+  }
+
+  pub fn read_str<'a>(&mut self, str: &'a str) -> Option<&'a str> {
+    let start = self.position_current;
+    for ch in str.chars() {
+      if self.read() != Some(&ch) {
+        self.position_current = start;
+        return None;
+      }
+    }
+    Some(str)
+  }
 }
 
 impl From<&LexerState> for ReaderState {

@@ -38,15 +38,13 @@ impl Lexer {
         loop {
             println!("=====================================");
             for reader in &mut self.readers {
-                println!("Trying reader: {}", reader.name());
-
                 let mut reader_state = (&state).into();
 
                 let reader_result = reader.read(&mut reader_state);
 
                 match reader_result {
                     ReaderResult::Token(token) => {
-                        println!("Found token: {:#?}", token);
+                        println!("{} found token: {:#?}", reader.name(), token);
 
                         result.tokens.push(token);
                         state.position = reader_state.get_position();
@@ -54,13 +52,11 @@ impl Lexer {
                         break;
                     }
                     ReaderResult::None => {
-                        println!("Reader did not find a token.");
-
                         // Continue to the next reader.
                         continue;
                     }
                     ReaderResult::Err(error) => {
-                        println!("Reader found an error: {:#?}", error);
+                        println!("{} found an error: {:#?}", reader.name(), error);
 
                         result.errors.push(error);
                         state.position = reader_state.get_position();
