@@ -73,6 +73,90 @@ impl Reader for CommentReader {
     }
 }
 
+struct KeywordReader;
+
+impl Reader for KeywordReader {
+    fn name(&self) -> String {
+        "KeywordReader".to_string()
+    }
+
+    fn read(&self, state: &mut ReaderState) -> ReaderResult {
+        if let Some(_) = state.read_str("if") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::If,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::None,
+            });
+        }
+
+        if let Some(_) = state.read_str("else") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::Else,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::None,
+            });
+        }
+
+        if let Some(_) = state.read_str("for") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::For,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::None,
+            });
+        }
+
+        if let Some(_) = state.read_str("while") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::While,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::None,
+            });
+        }
+
+        if let Some(_) = state.read_str("loop") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::Loop,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::None,
+            });
+        }
+
+        if let Some(_) = state.read_str("break") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::Break,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::None,
+            });
+        }
+
+        if let Some(_) = state.read_str("continue") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::Continue,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::None,
+            });
+        }
+
+        if let Some(_) = state.read_str("return") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::Return,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::None,
+            });
+        }
+
+        return ReaderResult::None;
+    }
+}
+
 struct IdentifierReader;
 
 impl Reader for IdentifierReader {
@@ -586,7 +670,6 @@ impl Reader for CommandReader {
 
         let mut command = String::new();
 
-        // TODO: Remove this clone
         while let Some(char) = state.clone().peek() {
             match char {
                 // Escape new lines
@@ -682,6 +765,7 @@ pub fn test() {
     let lexer = lexer::Lexer::new();
     let mut lexer = lexer
         .add_reader(CommentReader)
+        .add_reader(KeywordReader)
         .add_reader(IdentifierReader)
         .add_reader(NumberReader)
         .add_reader(OperatorReader)

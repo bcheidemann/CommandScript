@@ -53,6 +53,8 @@ pub enum TokenKind {
     While,
     Loop,
     Break,
+    Continue,
+    Return,
     Whitespace,
 }
 
