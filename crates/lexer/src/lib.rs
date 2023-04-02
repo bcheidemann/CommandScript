@@ -157,6 +157,36 @@ impl Reader for KeywordReader {
     }
 }
 
+struct BooleanReader;
+
+impl Reader for BooleanReader {
+    fn name(&self) -> String {
+        "BooleanReader".to_string()
+    }
+
+    fn read(&self, state: &mut ReaderState) -> ReaderResult {
+        if let Some(_) = state.read_str("true") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::Boolean,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::Boolean(true),
+            });
+        }
+
+        if let Some(_) = state.read_str("false") {
+            return ReaderResult::Token(Token {
+                kind: TokenKind::Boolean,
+                start: state.get_start(),
+                end: state.get_position(),
+                value: TokenValue::Boolean(false),
+            });
+        }
+
+        return ReaderResult::None;
+    }
+}
+
 struct IdentifierReader;
 
 impl Reader for IdentifierReader {
@@ -804,9 +834,10 @@ pub fn test() {
     let mut lexer = lexer
         .add_reader(CommentReader)
         .add_reader(KeywordReader)
-        .add_reader(IdentifierReader)
+        .add_reader(BooleanReader)
         .add_reader(NumberReader)
         .add_reader(StringReader)
+        .add_reader(IdentifierReader)
         .add_reader(OperatorReader)
         .add_reader(CommandReader)
         .add_reader(NewLineReader)
