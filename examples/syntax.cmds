@@ -1,8 +1,9 @@
 // Multi Line Strings
-greeting = """
+greeting =
+  """
   Hello
   World!
-""" // "Hello\nWorld!"
+  """ // "Hello\nWorld!"
 
 // Simpele Command
 $ echo "Hello World!"
