@@ -1,6 +1,6 @@
 use std::fmt::{Display, Debug};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     NewLine,
     Identifier,
@@ -67,7 +67,7 @@ impl Display for TokenKind {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenValue {
     None,
     String(String),
@@ -75,7 +75,7 @@ pub enum TokenValue {
     Boolean(bool),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub start: usize,

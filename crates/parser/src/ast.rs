@@ -17,6 +17,19 @@ pub enum Expression {
     Break(Box<BreakExpression>),
 }
 
+impl Expression {
+    pub fn span(&self) -> &Span {
+        match self {
+            Self::Literal(expression) => &expression.span,
+            Self::Infix(expression) => &expression.span,
+            Self::Prefix(expression) => &expression.span,
+            Self::If(expression) => &expression.span,
+            Self::Block(expression) => &expression.span,
+            Self::Break(expression) => &expression.span,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct LiteralExpression {
     pub span: Box<Span>,
@@ -79,7 +92,7 @@ pub struct InfixExpression {
     pub right: Box<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum InfixOperatorKind {
     EqualsEquals,
     BangEquals,
@@ -101,6 +114,57 @@ pub enum InfixOperatorKind {
     Star,
     Caret,
     Percent,
+}
+
+impl InfixOperatorKind {
+    pub fn try_from_token(token: &Token) -> Option<Self> {
+        match token.kind {
+            TokenKind::EqualsEquals => Some(Self::EqualsEquals),
+            TokenKind::BangEquals => Some(Self::BangEquals),
+            TokenKind::LessThan => Some(Self::LessThan),
+            TokenKind::LessThanEquals => Some(Self::LessThanEquals),
+            TokenKind::LessThanLessThan => Some(Self::LessThanLessThan),
+            TokenKind::GreaterThan => Some(Self::GreaterThan),
+            TokenKind::GreaterThanEquals => Some(Self::GreaterThanEquals),
+            TokenKind::GreaterThanGreaterThan => Some(Self::GreaterThanGreaterThan),
+            TokenKind::Ampersand => Some(Self::Ampersand),
+            TokenKind::AmpersandAmpersand => Some(Self::AmpersandAmpersand),
+            TokenKind::Pipe => Some(Self::Pipe),
+            TokenKind::PipePipe => Some(Self::PipePipe),
+            TokenKind::Dot => Some(Self::Dot),
+            TokenKind::DotDot => Some(Self::DotDot),
+            TokenKind::Plus => Some(Self::Plus),
+            TokenKind::Minus => Some(Self::Minus),
+            TokenKind::Slash => Some(Self::Slash),
+            TokenKind::Star => Some(Self::Star),
+            TokenKind::Caret => Some(Self::Caret),
+            TokenKind::Percent => Some(Self::Percent),
+            _ => None,
+        }
+    }
+
+    pub fn binding_power(&self) -> (u8, u8) {
+        match self {
+            InfixOperatorKind::EqualsEquals => todo!(),
+            InfixOperatorKind::BangEquals => todo!(),
+            InfixOperatorKind::LessThan => todo!(),
+            InfixOperatorKind::LessThanEquals => todo!(),
+            InfixOperatorKind::LessThanLessThan => todo!(),
+            InfixOperatorKind::GreaterThan => todo!(),
+            InfixOperatorKind::GreaterThanEquals => todo!(),
+            InfixOperatorKind::GreaterThanGreaterThan => todo!(),
+            InfixOperatorKind::Ampersand => todo!(),
+            InfixOperatorKind::AmpersandAmpersand => todo!(),
+            InfixOperatorKind::Pipe => todo!(),
+            InfixOperatorKind::PipePipe => todo!(),
+            InfixOperatorKind::Dot => todo!(),
+            InfixOperatorKind::DotDot => todo!(),
+            InfixOperatorKind::Plus | InfixOperatorKind::Minus => (1, 2),
+            InfixOperatorKind::Slash | InfixOperatorKind::Star => (3, 4),
+            InfixOperatorKind::Caret => todo!(),
+            InfixOperatorKind::Percent => todo!(),
+        }
+    }
 }
 
 #[derive(Debug)]

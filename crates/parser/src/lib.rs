@@ -1,7 +1,9 @@
-use ast::{Program, LiteralExpression, Expression, BreakExpression};
+use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program};
 use from_token::FromToken;
 use lexer::token::{Token, TokenKind};
 use parser_error::ParserError;
+
+use crate::{ast::InfixOperatorKind, span::Span};
 
 mod from_token;
 
@@ -15,7 +17,7 @@ macro_rules! unexpected_token_error {
             message: format!("Unexpected token of kind {}", $token.kind),
             position: $token.start,
         }
-    }
+    };
 }
 
 macro_rules! peek_token {
@@ -31,20 +33,18 @@ macro_rules! peek_token {
 }
 
 macro_rules! peek_assert_token {
-    ($self:ident, $kind:ident) => {
-        {
-            let token = peek_token!($self);
+    ($self:ident, $kind:ident) => {{
+        let token = peek_token!($self);
 
-            assert!(
-                token.kind == TokenKind::$kind,
-                "Expected token of kind {}, found token of kind {}",
-                stringify!($kind),
-                token.kind
-            );
+        assert!(
+            token.kind == TokenKind::$kind,
+            "Expected token of kind {}, found token of kind {}",
+            stringify!($kind),
+            token.kind
+        );
 
-            token
-        }
-    };
+        token
+    }};
 }
 
 struct ParserContext {
@@ -92,79 +92,122 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self) -> Result<Option<Expression>, ParserError> {
-        macro_rules! wrap_return_value {
+        self.pratt_parse_expression(0)
+    }
+
+    // Pratt parser for expressions based on https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
+    fn pratt_parse_expression(&mut self, min_bp: u8) -> Result<Option<Expression>, ParserError> {
+        macro_rules! wrap_lhs {
             ($expression_type:expr, $value:expr) => {
-                Ok(Some($expression_type(Box::new($value))))
+                $expression_type(Box::new($value))
             };
         }
 
-        let token = peek_token!(self);
+        self.skip_whitespace();
 
-        match token.kind {
-            TokenKind::NewLine => {
-                self.advance();
-                return Ok(None);
-            },
+        let token = peek_token!(self);
+        let span = Span::start_from(token.start);
+
+        let mut lhs = match token.kind {
+            TokenKind::Whitespace | TokenKind::NewLine => unreachable!("Whitespace and newlines should be skipped"),
             TokenKind::Identifier => todo!(),
-            TokenKind::String => wrap_return_value!(Expression::Literal, self.parse_literal_expression()?),
-            TokenKind::Number => wrap_return_value!(Expression::Literal, self.parse_literal_expression()?),
-            TokenKind::Boolean => wrap_return_value!(Expression::Literal, self.parse_literal_expression()?),
+            TokenKind::String | TokenKind::Number | TokenKind::Boolean => {
+                wrap_lhs!(Expression::Literal, self.parse_literal_expression()?)
+            },
             TokenKind::Command => todo!(),
-            TokenKind::Equals => Err(unexpected_token_error!(token)),
-            TokenKind::EqualsEquals => Err(unexpected_token_error!(token)),
-            TokenKind::BangEquals => Err(unexpected_token_error!(token)),
-            TokenKind::LessThan => Err(unexpected_token_error!(token)),
-            TokenKind::LessThanEquals => Err(unexpected_token_error!(token)),
-            TokenKind::LessThanLessThan => Err(unexpected_token_error!(token)),
-            TokenKind::LessThanLessThanEquals => Err(unexpected_token_error!(token)),
-            TokenKind::GreaterThan => Err(unexpected_token_error!(token)),
-            TokenKind::GreaterThanEquals => Err(unexpected_token_error!(token)),
-            TokenKind::GreaterThanGreaterThan => Err(unexpected_token_error!(token)),
-            TokenKind::GreaterThanGreaterThanEquals => Err(unexpected_token_error!(token)),
-            TokenKind::SlashEquals => Err(unexpected_token_error!(token)),
-            TokenKind::StarEquals => Err(unexpected_token_error!(token)),
-            TokenKind::PlusEquals => Err(unexpected_token_error!(token)),
-            TokenKind::MinusEquals => Err(unexpected_token_error!(token)),
-            TokenKind::PercentEquals => Err(unexpected_token_error!(token)),
-            TokenKind::CaretEquals => Err(unexpected_token_error!(token)),
-            TokenKind::AmpersandEquals => Err(unexpected_token_error!(token)),
-            TokenKind::AmpersandAmpersandEquals => Err(unexpected_token_error!(token)),
-            TokenKind::Ampersand => Err(unexpected_token_error!(token)),
-            TokenKind::AmpersandAmpersand => Err(unexpected_token_error!(token)),
-            TokenKind::PipeEquals => Err(unexpected_token_error!(token)),
-            TokenKind::PipePipeEquals => Err(unexpected_token_error!(token)),
-            TokenKind::Pipe => Err(unexpected_token_error!(token)),
-            TokenKind::PipePipe => Err(unexpected_token_error!(token)),
-            TokenKind::Dot => Err(unexpected_token_error!(token)),
+            TokenKind::Equals => return Err(unexpected_token_error!(token)),
+            TokenKind::EqualsEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::BangEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::LessThan => return Err(unexpected_token_error!(token)),
+            TokenKind::LessThanEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::LessThanLessThan => return Err(unexpected_token_error!(token)),
+            TokenKind::LessThanLessThanEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::GreaterThan => return Err(unexpected_token_error!(token)),
+            TokenKind::GreaterThanEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::GreaterThanGreaterThan => return Err(unexpected_token_error!(token)),
+            TokenKind::GreaterThanGreaterThanEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::SlashEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::StarEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::PlusEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::MinusEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::PercentEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::CaretEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::AmpersandEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::AmpersandAmpersandEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::Ampersand => return Err(unexpected_token_error!(token)),
+            TokenKind::AmpersandAmpersand => return Err(unexpected_token_error!(token)),
+            TokenKind::PipeEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::PipePipeEquals => return Err(unexpected_token_error!(token)),
+            TokenKind::Pipe => return Err(unexpected_token_error!(token)),
+            TokenKind::PipePipe => return Err(unexpected_token_error!(token)),
+            TokenKind::Dot => return Err(unexpected_token_error!(token)),
             TokenKind::DotDot => todo!(),
             TokenKind::Bang => todo!(),
             TokenKind::Plus => todo!(),
             TokenKind::Minus => todo!(),
-            TokenKind::Slash => Err(unexpected_token_error!(token)),
-            TokenKind::Star => Err(unexpected_token_error!(token)),
-            TokenKind::Caret => Err(unexpected_token_error!(token)),
-            TokenKind::Percent => Err(unexpected_token_error!(token)),
-            TokenKind::Comma => Err(unexpected_token_error!(token)),
+            TokenKind::Slash => return Err(unexpected_token_error!(token)),
+            TokenKind::Star => return Err(unexpected_token_error!(token)),
+            TokenKind::Caret => return Err(unexpected_token_error!(token)),
+            TokenKind::Percent => return Err(unexpected_token_error!(token)),
+            TokenKind::Comma => return Err(unexpected_token_error!(token)),
             TokenKind::Comment => todo!(),
             TokenKind::BraceCurlyOpen => todo!(),
-            TokenKind::BraceCurlyClose => Err(unexpected_token_error!(token)),
+            TokenKind::BraceCurlyClose => return Err(unexpected_token_error!(token)),
             TokenKind::BraceSquareOpen => todo!(),
-            TokenKind::BraceSquareClose => Err(unexpected_token_error!(token)),
+            TokenKind::BraceSquareClose => return Err(unexpected_token_error!(token)),
             TokenKind::BraceRoundOpen => todo!(),
-            TokenKind::BraceRoundClose => Err(unexpected_token_error!(token)),
+            TokenKind::BraceRoundClose => return Err(unexpected_token_error!(token)),
             TokenKind::If => todo!(),
-            TokenKind::Else => Err(unexpected_token_error!(token)),
+            TokenKind::Else => return Err(unexpected_token_error!(token)),
             TokenKind::For => todo!(),
             TokenKind::While => todo!(),
             TokenKind::Loop => todo!(),
-            TokenKind::Break => wrap_return_value!(Expression::Break, self.parse_break_expression()?),
+            TokenKind::Break => {
+                wrap_lhs!(Expression::Break, self.parse_break_expression()?)
+            }
             TokenKind::Continue => todo!(),
             TokenKind::Return => todo!(),
-            TokenKind::Whitespace => {
-                self.advance();
-                return Ok(None);
-            },
+        };
+
+
+        self.skip_whitespace();
+
+        loop {
+            let token = match self.peek() {
+                Some(token) => token.clone(),
+                None => break,
+            };
+
+            let operator = match InfixOperatorKind::try_from_token(&token) {
+                Some(operator) => operator,
+                None => break,
+            };
+
+            let (l_bp, r_bp) = operator.binding_power();
+
+            if l_bp < min_bp {
+                break;
+            }
+
+            self.advance_and_skip_whitespace();
+
+            let rhs = match self.pratt_parse_expression(r_bp)? {
+                Some(rhs) => rhs,
+                None => return Err(ParserError {
+                    message: "Expected expression".to_string(),
+                    position: token.start,
+                }),
+            };
+
+            lhs = Expression::Infix(Box::new(InfixExpression {
+                span: Box::new(span.extend(rhs.span().end)),
+                left: Box::new(lhs),
+                operator,
+                right: Box::new(rhs),
+            }));
         }
+
+        Ok(Some(lhs))
     }
 
     fn parse_literal_expression(&mut self) -> Result<LiteralExpression, ParserError> {
@@ -196,5 +239,19 @@ impl<'a> Parser<'a> {
 
     fn advance(&mut self) {
         self.position += 1;
+    }
+
+    fn skip_whitespace(&mut self) {
+        while let Some(token) = self.peek() {
+            match token.kind {
+                TokenKind::Whitespace | TokenKind::NewLine => self.advance(),
+                _ => break,
+            }
+        }
+    }
+
+    fn advance_and_skip_whitespace(&mut self) {
+        self.advance();
+        self.skip_whitespace();
     }
 }
