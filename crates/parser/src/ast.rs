@@ -1,6 +1,6 @@
 use lexer::token::{Token, TokenKind, TokenValue};
 
-use crate::{from_token::FromToken, parser_error::ParserError};
+use crate::{from_token::FromToken, parser_error::ParserError, span::Span};
 
 #[derive(Debug)]
 pub struct Program {
@@ -18,13 +18,28 @@ pub enum Expression {
 }
 
 #[derive(Debug)]
-pub enum LiteralExpression {
+pub struct LiteralExpression {
+    pub span: Box<Span>,
+    pub value: Box<LiteralExpressionValue>,
+}
+
+impl FromToken for LiteralExpression {
+    fn from_token(token: &Token) -> Result<Self, ParserError> {
+        Ok(Self {
+            span: Box::new(Span::new(token.start, token.end)),
+            value: Box::new(LiteralExpressionValue::from_token(token)?),
+        })
+    }
+}
+
+#[derive(Debug)]
+pub enum LiteralExpressionValue {
     String(String),
     Number(f64),
     Boolean(bool),
 }
 
-impl FromToken for LiteralExpression {
+impl FromToken for LiteralExpressionValue {
     fn from_token(token: &Token) -> Result<Self, ParserError> {
         match &token.kind {
             TokenKind::String => {
@@ -58,6 +73,7 @@ impl FromToken for LiteralExpression {
 
 #[derive(Debug)]
 pub struct InfixExpression {
+    pub span: Box<Span>,
     pub left: Box<Expression>,
     pub operator: InfixOperatorKind,
     pub right: Box<Expression>,
@@ -89,6 +105,7 @@ pub enum InfixOperatorKind {
 
 #[derive(Debug)]
 pub struct PrefixExpression {
+    pub span: Box<Span>,
     pub operator: PrefixOperatorKind,
     pub right: Box<Expression>,
 }
@@ -102,22 +119,32 @@ pub enum PrefixOperatorKind {
 
 #[derive(Debug)]
 pub struct IfExpression {
+    pub span: Box<Span>,
     pub conditions: Vec<IfCondition>,
-    pub default: Option<Box<Expression>>,
+    pub default: Option<Box<IfDefault>>,
 }
 
 #[derive(Debug)]
 pub struct IfCondition {
+    pub span: Box<Span>,
     pub condition: Box<Expression>,
     pub consequence: Box<Expression>,
 }
 
 #[derive(Debug)]
+pub struct IfDefault {
+    pub span: Box<Span>,
+    pub default: Box<Expression>,
+}
+
+#[derive(Debug)]
 pub struct BlockExpression {
+    pub span: Box<Span>,
     pub expressions: Vec<Expression>,
 }
 
 #[derive(Debug)]
 pub struct BreakExpression {
+    pub span: Box<Span>,
     pub expression: Option<Box<Expression>>,
 }

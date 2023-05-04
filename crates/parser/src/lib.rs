@@ -7,6 +7,7 @@ mod from_token;
 
 pub mod ast;
 pub mod parser_error;
+pub mod span;
 
 macro_rules! unexpected_token_error {
     ($token:ident) => {
