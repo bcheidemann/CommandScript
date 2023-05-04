@@ -1,5 +1,5 @@
 [package]
-name = "lexer"
+name = "common"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -8,6 +8,3 @@ publish = false
 
 [dependencies]
 thiserror = "1.0.38"
-unicode-id-start = "1.1.0"
-common = { path = "../common" }
-

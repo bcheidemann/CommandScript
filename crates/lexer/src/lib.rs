@@ -7,6 +7,8 @@ pub mod reader_result;
 pub mod reader_state;
 pub mod token;
 
+use common::error::format_error_message_inline;
+use lexer::Lexer;
 use reader::Reader;
 use reader_error::ReaderError;
 use reader_result::ReaderResult;
@@ -829,9 +831,8 @@ impl Reader for UnexpectedCharacterReader {
     }
 }
 
-pub fn test() {
-    let lexer = lexer::Lexer::new();
-    let mut lexer = lexer
+pub fn default_lexer() -> Lexer {
+    Lexer::new()
         .add_reader(CommentReader)
         .add_reader(KeywordReader)
         .add_reader(BooleanReader)
@@ -842,7 +843,12 @@ pub fn test() {
         .add_reader(CommandReader)
         .add_reader(NewLineReader)
         .add_reader(WhitespaceReader)
-        .add_reader(UnexpectedCharacterReader);
+        .add_reader(UnexpectedCharacterReader)
+}
+
+// TODO: Remove this in favour of proper unit tests
+pub fn test() {
+    let mut lexer = default_lexer();
 
     let source = "\
         Ident ident ident_snake identCamel ident123
@@ -877,6 +883,6 @@ pub fn test() {
     // println!("{result:#?}");
 
     result.errors.iter().for_each(move |error| {
-        println!("{}", error.format_inline(source));
+        println!("{}", format_error_message_inline(source, &error.message, error.position));
     });
 }

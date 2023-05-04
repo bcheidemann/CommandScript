@@ -31,12 +31,7 @@ impl Lexer {
             errors: Vec::new(),
         };
 
-        for reader in &self.readers {
-            println!("Reader: {}", reader.name());
-        }
-
         loop {
-            println!("=====================================");
             for reader in &mut self.readers {
                 let mut reader_state = (&state).into();
 
@@ -44,8 +39,6 @@ impl Lexer {
 
                 match reader_result {
                     ReaderResult::Token(token) => {
-                        println!("{} found token: {:#?}", reader.name(), token);
-
                         result.tokens.push(token);
                         state.position = reader_state.get_position();
 
@@ -56,8 +49,6 @@ impl Lexer {
                         continue;
                     }
                     ReaderResult::Err(error) => {
-                        println!("{} found an error: {:#?}", reader.name(), error);
-
                         result.errors.push(error);
                         state.position = reader_state.get_position();
                         break;

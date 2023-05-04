@@ -6,15 +6,33 @@ version = 3
 name = "command-script"
 version = "0.1.0"
 dependencies = [
+ "common",
  "lexer",
+ "parser",
+]
+
+[[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
 name = "lexer"
 version = "0.1.0"
 dependencies = [
+ "common",
  "thiserror",
  "unicode-id-start",
+]
+
+[[package]]
+name = "parser"
+version = "0.1.0"
+dependencies = [
+ "lexer",
+ "thiserror",
 ]
 
 [[package]]

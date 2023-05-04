@@ -1,3 +1,5 @@
+use std::fmt::{Display, Debug};
+
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
     NewLine,
@@ -57,6 +59,12 @@ pub enum TokenKind {
     Continue,
     Return,
     Whitespace,
+}
+
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(self, f)
+    }
 }
 
 #[derive(Debug, PartialEq)]
