@@ -168,7 +168,7 @@ impl InfixOperatorKind {
             InfixOperatorKind::AmpersandAmpersand => todo!(),
             InfixOperatorKind::Pipe => todo!(),
             InfixOperatorKind::PipePipe => todo!(),
-            InfixOperatorKind::Dot => todo!(),
+            InfixOperatorKind::Dot => (5, 6),
             InfixOperatorKind::DotDot => todo!(),
             InfixOperatorKind::Plus | InfixOperatorKind::Minus => (1, 2),
             InfixOperatorKind::Slash | InfixOperatorKind::Star => (3, 4),
