@@ -5,7 +5,7 @@ Bash sucks but most other languages do not have good syntax for dealing with com
 ## Status
 
  - [x] Lexer
- - [ ] Parser
+ - [ ] Parser (in progress)
  - [ ] Interpreter
 
 ## Example Code
