@@ -18,27 +18,27 @@ pub struct Program {
 
 #[derive(Debug)]
 pub enum Expression {
-    Literal(Box<LiteralExpression>),
     Infix(Box<InfixExpression>),
     Prefix(Box<PrefixExpression>),
-    If(Box<IfExpression>),
-    Block(Box<BlockExpression>),
-    Break(Box<BreakExpression>),
-    Identifier(Box<IdentifierExpression>),
     Grouping(Box<GroupingExpression>),
+    Block(Box<BlockExpression>),
+    Literal(Box<LiteralExpression>),
+    Identifier(Box<IdentifierExpression>),
+    If(Box<IfExpression>),
+    Break(Box<BreakExpression>),
 }
 
 impl Expression {
     pub fn span(&self) -> &Span {
         match self {
-            Expression::Literal(expression) => &expression.span,
             Expression::Infix(expression) => &expression.span,
             Expression::Prefix(expression) => &expression.span,
-            Expression::If(expression) => &expression.span,
-            Expression::Block(expression) => &expression.span,
-            Expression::Break(expression) => &expression.span,
-            Expression::Identifier(expression) => &expression.span,
             Expression::Grouping(expression) => &expression.span,
+            Expression::Block(expression) => &expression.span,
+            Expression::Literal(expression) => &expression.span,
+            Expression::Identifier(expression) => &expression.span,
+            Expression::If(expression) => &expression.span,
+            Expression::Break(expression) => &expression.span,
         }
     }
 }
