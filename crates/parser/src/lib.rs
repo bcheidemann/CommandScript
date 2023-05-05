@@ -1,4 +1,4 @@
-use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind};
+use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind, BlockExpression};
 use from_token::FromToken;
 use lexer::token::{Token, TokenKind};
 use parser_error::ParserError;
@@ -22,6 +22,15 @@ macro_rules! unexpected_token_error {
         ParserError {
             message: format!("Unexpected token of kind {}: {}", $token.kind, $message),
             position: $token.start,
+        }
+    };
+}
+
+macro_rules! expected_expression_error {
+    ($token:ident) => {
+        ParserError {
+            message: "Expected expression".to_string(),
+            position: $token.end,
         }
     };
 }
@@ -126,7 +135,10 @@ impl<'a> Parser<'a> {
 
         self.skip_whitespace();
 
-        let token = peek_token!(self);
+        let token = match self.peek() {
+            Some(token) => token,
+            None => return Ok(None),
+        };
         let span = Span::start_from(token.start);
 
         let mut lhs = match token.kind {
@@ -172,7 +184,7 @@ impl<'a> Parser<'a> {
             TokenKind::Percent => return Err(unexpected_token_error!(token)),
             TokenKind::Comma => return Err(unexpected_token_error!(token)),
             TokenKind::Comment => todo!(),
-            TokenKind::BraceCurlyOpen => todo!(),
+            TokenKind::BraceCurlyOpen => wrap_lhs!(Expression::Block, self.parse_block_expression()?),
             TokenKind::BraceCurlyClose => return Err(unexpected_token_error!(token)),
             TokenKind::BraceSquareOpen => todo!(),
             TokenKind::BraceSquareClose => return Err(unexpected_token_error!(token)),
@@ -214,10 +226,7 @@ impl<'a> Parser<'a> {
 
             let rhs = match self.pratt_parse_expression(r_bp)? {
                 Some(rhs) => rhs,
-                None => return Err(ParserError {
-                    message: "Expected expression".to_string(),
-                    position: token.start,
-                }),
+                None => return Err(expected_expression_error!(token)),
             };
 
             lhs = Expression::Infix(Box::new(InfixExpression {
@@ -229,6 +238,37 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Some(lhs))
+    }
+
+    fn parse_block_expression(&mut self) -> Result<BlockExpression, ParserError> {
+        let token = peek_assert_token!(self, BraceCurlyOpen).clone();
+        let span = Span::start_from(token.start);
+
+        self.advance_and_skip_whitespace();
+
+        let mut expressions = vec![];
+
+        loop {
+            let token = peek_token!(self).clone();
+
+            if token.kind == TokenKind::BraceCurlyClose {
+                self.advance();
+
+                return Ok(BlockExpression {
+                    span: Box::new(span.extend(token.end)),
+                    expressions,
+                });
+            }
+
+            // TODO: If parse error is returned, advance to the next newline token
+            //       and collect the error in a vector of errors to be returned
+            let expression = self.parse_expression()?;
+
+            // Skip whitespace and newlines
+            if let Some(expression) = expression {
+                expressions.push(expression);
+            }
+        }
     }
 
     fn parse_prefix_expression(&mut self) -> Result<PrefixExpression, ParserError> {
@@ -245,10 +285,7 @@ impl<'a> Parser<'a> {
 
         self.advance_and_skip_whitespace();
 
-        let expression = self.pratt_parse_expression(r_bp)?.ok_or(ParserError {
-            message: "Expected expression".to_string(),
-            position: token.end,
-        })?;
+        let expression = self.pratt_parse_expression(r_bp)?.ok_or(expected_expression_error!(token))?;
 
         Ok(PrefixExpression {
             span: Box::new(span.extend(expression.span().end)),
@@ -263,10 +300,7 @@ impl<'a> Parser<'a> {
 
         self.advance_and_skip_whitespace();
 
-        let expression = self.pratt_parse_expression(0)?.ok_or(ParserError {
-            message: "Expected expression".to_string(),
-            position: token.end,
-        })?;
+        let expression = self.parse_expression()?.ok_or(expected_expression_error!(token))?;
 
         self.skip_whitespace();
 

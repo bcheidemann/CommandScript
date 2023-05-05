@@ -31,6 +31,10 @@ impl Lexer {
             errors: Vec::new(),
         };
 
+        if source.len() == 0 {
+            return result;
+        }
+
         loop {
             for reader in &mut self.readers {
                 let mut reader_state = (&state).into();
