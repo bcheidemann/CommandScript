@@ -1,4 +1,4 @@
-use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression};
+use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind};
 use from_token::FromToken;
 use lexer::token::{Token, TokenKind};
 use parser_error::ParserError;
@@ -44,6 +44,21 @@ macro_rules! peek_assert_token {
 
         assert!(
             token.kind == TokenKind::$kind,
+            "Expected token of kind {}, found token of kind {}",
+            stringify!($kind),
+            token.kind
+        );
+
+        token
+    }};
+}
+
+macro_rules! peek_assert_matching_kind {
+    ($self:ident, $kind:pat) => {{
+        let token = peek_token!($self);
+
+        assert!(
+            matches!(token.kind, $kind),
             "Expected token of kind {}, found token of kind {}",
             stringify!($kind),
             token.kind
@@ -148,9 +163,9 @@ impl<'a> Parser<'a> {
             TokenKind::PipePipe => return Err(unexpected_token_error!(token)),
             TokenKind::Dot => return Err(unexpected_token_error!(token)),
             TokenKind::DotDot => todo!(),
-            TokenKind::Bang => todo!(),
-            TokenKind::Plus => todo!(),
-            TokenKind::Minus => todo!(),
+            TokenKind::Bang | TokenKind::Plus | TokenKind::Minus => {
+                wrap_lhs!(Expression::Prefix, self.parse_prefix_expression()?)
+            },
             TokenKind::Slash => return Err(unexpected_token_error!(token)),
             TokenKind::Star => return Err(unexpected_token_error!(token)),
             TokenKind::Caret => return Err(unexpected_token_error!(token)),
@@ -214,6 +229,32 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Some(lhs))
+    }
+
+    fn parse_prefix_expression(&mut self) -> Result<PrefixExpression, ParserError> {
+        let token = peek_assert_matching_kind!(
+            self,
+            TokenKind::Bang | TokenKind::Minus | TokenKind::Plus
+        ).clone();
+        let span = Span::start_from(token.start);
+        let operator = match PrefixOperatorKind::try_from_token(&token) {
+            Some(operator) => operator,
+            None => unreachable!(),
+        };
+        let ((), r_bp) = operator.prefix_binding_power();
+
+        self.advance_and_skip_whitespace();
+
+        let expression = self.pratt_parse_expression(r_bp)?.ok_or(ParserError {
+            message: "Expected expression".to_string(),
+            position: token.end,
+        })?;
+
+        Ok(PrefixExpression {
+            span: Box::new(span.extend(expression.span().end)),
+            operator,
+            right: Box::new(expression),
+        })
     }
 
     fn parse_grouping_expression(&mut self) -> Result<GroupingExpression, ParserError> {

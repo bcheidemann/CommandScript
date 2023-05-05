@@ -170,7 +170,7 @@ impl InfixOperatorKind {
             InfixOperatorKind::AmpersandAmpersand => todo!(),
             InfixOperatorKind::Pipe => todo!(),
             InfixOperatorKind::PipePipe => todo!(),
-            InfixOperatorKind::Dot => (5, 6),
+            InfixOperatorKind::Dot => (7, 8),
             InfixOperatorKind::DotDot => todo!(),
             InfixOperatorKind::Plus | InfixOperatorKind::Minus => (1, 2),
             InfixOperatorKind::Slash | InfixOperatorKind::Star => (3, 4),
@@ -192,6 +192,21 @@ pub enum PrefixOperatorKind {
     Bang,
     Plus,
     Minus,
+}
+
+impl PrefixOperatorKind {
+    pub fn try_from_token(token: &Token) -> Option<Self> {
+        match token.kind {
+            TokenKind::Bang => Some(Self::Bang),
+            TokenKind::Plus => Some(Self::Plus),
+            TokenKind::Minus => Some(Self::Minus),
+            _ => None,
+        }
+    }
+
+    pub fn prefix_binding_power(&self) -> ((), u8) {
+        ((), 6)
+    }
 }
 
 #[derive(Debug)]
