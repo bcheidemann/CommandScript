@@ -1,9 +1,9 @@
-use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind, BlockExpression};
+use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind, BlockExpression, IfExpression};
 use from_token::FromToken;
 use lexer::token::{Token, TokenKind};
 use parser_error::ParserError;
 
-use crate::{ast::InfixOperatorKind, span::Span};
+use crate::{ast::{InfixOperatorKind, IfCondition, IfDefault}, span::Span};
 
 mod from_token;
 
@@ -12,13 +12,13 @@ pub mod parser_error;
 pub mod span;
 
 macro_rules! unexpected_token_error {
-    ($token:ident) => {
+    ($token:expr) => {
         ParserError {
             message: format!("Unexpected token of kind {}", $token.kind),
             position: $token.start,
         }
     };
-    ($token:ident, $message:expr) => {
+    ($token:expr, $message:expr) => {
         ParserError {
             message: format!("Unexpected token of kind {}: {}", $token.kind, $message),
             position: $token.start,
@@ -27,7 +27,7 @@ macro_rules! unexpected_token_error {
 }
 
 macro_rules! expected_expression_error {
-    ($token:ident) => {
+    ($token:expr) => {
         ParserError {
             message: "Expected expression".to_string(),
             position: $token.end,
@@ -36,7 +36,7 @@ macro_rules! expected_expression_error {
 }
 
 macro_rules! peek_token {
-    ($self:ident) => {
+    ($self:expr) => {
         $self.peek().ok_or(ParserError {
             message: "Unexpected end of file".to_string(),
             position: match $self.tokens.last() {
@@ -190,7 +190,7 @@ impl<'a> Parser<'a> {
             TokenKind::BraceSquareClose => return Err(unexpected_token_error!(token)),
             TokenKind::BraceRoundOpen => wrap_lhs!(Expression::Grouping, self.parse_grouping_expression()?),
             TokenKind::BraceRoundClose => return Err(unexpected_token_error!(token)),
-            TokenKind::If => todo!(),
+            TokenKind::If => wrap_lhs!(Expression::If, self.parse_if_expression()?),
             TokenKind::Else => return Err(unexpected_token_error!(token)),
             TokenKind::For => todo!(),
             TokenKind::While => todo!(),
@@ -329,6 +329,83 @@ impl<'a> Parser<'a> {
         let identifier = IdentifierExpression::from_token(token);
         self.advance();
         identifier
+    }
+
+    fn parse_if_expression(&mut self) -> Result<IfExpression, ParserError> {
+        let token = peek_assert_token!(self, If).clone();
+        let mut outer_span = Span::start_from(token.start);
+
+        self.advance_and_skip_whitespace();
+
+        let mut conditions = vec![{
+            let condition = self.parse_expression()?.ok_or(expected_expression_error!(token))?;
+            let token = peek_token!(self).clone();
+            let consequence = self.parse_expression()?.ok_or(expected_expression_error!(token))?;
+            let span = outer_span.clone().extend(consequence.span().end);
+
+            outer_span = outer_span.extend(span.end);
+
+            IfCondition {
+                span: Box::new(span),
+                condition: Box::new(condition),
+                consequence: Box::new(consequence),
+            }
+        }];
+        let mut default = None;
+
+        self.skip_whitespace();
+
+        while let Some(token) = self.peek() {
+            if token.kind != TokenKind::Else {
+                break;
+            }
+
+            let span = Span::start_from(token.start);
+
+            self.advance_and_skip_whitespace();
+
+            let token = peek_token!(self).clone();
+
+            if token.kind == TokenKind::If {
+                self.advance_and_skip_whitespace();
+
+                conditions.push({
+                    let condition = self.parse_expression()?.ok_or(expected_expression_error!(token))?;
+                    let token = peek_token!(self).clone();
+                    let consequence = self.parse_expression()?.ok_or(expected_expression_error!(token))?;
+                    let span = span.extend(consequence.span().end);
+
+                    outer_span = outer_span.extend(span.end);
+
+                    self.skip_whitespace();
+
+                    IfCondition {
+                        span: Box::new(span),
+                        condition: Box::new(condition),
+                        consequence: Box::new(consequence),
+                    }
+                });
+            }
+            else {
+                let consequence = self.parse_expression()?.ok_or(expected_expression_error!(token))?;
+                let span = span.extend(consequence.span().end);
+
+                outer_span = outer_span.extend(span.end);
+
+                default = Some(Box::new(IfDefault {
+                    span: Box::new(span),
+                    consequence: Box::new(consequence),
+                }));
+
+                break;
+            }
+        }
+
+        Ok(IfExpression {
+            span: Box::new(outer_span),
+            conditions,
+            default,
+        })
     }
 
     fn parse_break_expression(&mut self) -> Result<BreakExpression, ParserError> {

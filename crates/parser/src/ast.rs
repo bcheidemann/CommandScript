@@ -226,7 +226,7 @@ pub struct IfCondition {
 #[derive(Debug)]
 pub struct IfDefault {
     pub span: Box<Span>,
-    pub default: Box<Expression>,
+    pub consequence: Box<Expression>,
 }
 
 #[derive(Debug)]
