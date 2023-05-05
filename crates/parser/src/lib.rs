@@ -1,4 +1,4 @@
-use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program};
+use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression};
 use from_token::FromToken;
 use lexer::token::{Token, TokenKind};
 use parser_error::ParserError;
@@ -110,7 +110,7 @@ impl<'a> Parser<'a> {
 
         let mut lhs = match token.kind {
             TokenKind::Whitespace | TokenKind::NewLine => unreachable!("Whitespace and newlines should be skipped"),
-            TokenKind::Identifier => todo!(),
+            TokenKind::Identifier => wrap_lhs!(Expression::Identifier, self.parse_identifier_expression()?),
             TokenKind::String | TokenKind::Number | TokenKind::Boolean => {
                 wrap_lhs!(Expression::Literal, self.parse_literal_expression()?)
             },
@@ -214,6 +214,13 @@ impl<'a> Parser<'a> {
         let expression = LiteralExpression::from_token(peek_token!(self));
         self.advance();
         expression
+    }
+
+    fn parse_identifier_expression(&mut self) -> Result<IdentifierExpression, ParserError> {
+        let token = peek_assert_token!(self, Identifier);
+        let identifier = IdentifierExpression::from_token(token);
+        self.advance();
+        identifier
     }
 
     fn parse_break_expression(&mut self) -> Result<BreakExpression, ParserError> {

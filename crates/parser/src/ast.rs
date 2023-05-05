@@ -2,6 +2,15 @@ use lexer::token::{Token, TokenKind, TokenValue};
 
 use crate::{from_token::FromToken, parser_error::ParserError, span::Span};
 
+macro_rules! unwrap_token_value {
+    ($variant:ident, $value:expr) => {
+        match $value {
+            TokenValue::$variant(inner) => inner,
+            _ => unreachable!("Unexpected enum variant: {:?}", $value),
+        }
+    };
+}
+
 #[derive(Debug)]
 pub struct Program {
     pub ast: Vec<Expression>,
@@ -15,17 +24,19 @@ pub enum Expression {
     If(Box<IfExpression>),
     Block(Box<BlockExpression>),
     Break(Box<BreakExpression>),
+    Identifier(Box<IdentifierExpression>),
 }
 
 impl Expression {
     pub fn span(&self) -> &Span {
         match self {
-            Self::Literal(expression) => &expression.span,
-            Self::Infix(expression) => &expression.span,
-            Self::Prefix(expression) => &expression.span,
-            Self::If(expression) => &expression.span,
-            Self::Block(expression) => &expression.span,
-            Self::Break(expression) => &expression.span,
+            Expression::Literal(expression) => &expression.span,
+            Expression::Infix(expression) => &expression.span,
+            Expression::Prefix(expression) => &expression.span,
+            Expression::If(expression) => &expression.span,
+            Expression::Block(expression) => &expression.span,
+            Expression::Break(expression) => &expression.span,
+            Expression::Identifier(expression) => &expression.span,
         }
     }
 }
@@ -211,4 +222,22 @@ pub struct BlockExpression {
 pub struct BreakExpression {
     pub span: Box<Span>,
     pub expression: Option<Box<Expression>>,
+}
+
+#[derive(Debug)]
+pub struct IdentifierExpression {
+    pub span: Box<Span>,
+    pub name: String,
+}
+
+impl FromToken for IdentifierExpression {
+    fn from_token(token: &Token) -> Result<Self, ParserError> {
+        assert!(token.kind == TokenKind::Identifier);
+        Ok(
+            IdentifierExpression {
+                span: Box::new(Span::new(token.start, token.end)),
+                name: unwrap_token_value!(String, &token.value).to_string(),
+            }
+        )
+    }
 }
