@@ -1,4 +1,4 @@
-use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression};
+use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression};
 use from_token::FromToken;
 use lexer::token::{Token, TokenKind};
 use parser_error::ParserError;
@@ -15,6 +15,12 @@ macro_rules! unexpected_token_error {
     ($token:ident) => {
         ParserError {
             message: format!("Unexpected token of kind {}", $token.kind),
+            position: $token.start,
+        }
+    };
+    ($token:ident, $message:expr) => {
+        ParserError {
+            message: format!("Unexpected token of kind {}: {}", $token.kind, $message),
             position: $token.start,
         }
     };
@@ -155,7 +161,7 @@ impl<'a> Parser<'a> {
             TokenKind::BraceCurlyClose => return Err(unexpected_token_error!(token)),
             TokenKind::BraceSquareOpen => todo!(),
             TokenKind::BraceSquareClose => return Err(unexpected_token_error!(token)),
-            TokenKind::BraceRoundOpen => todo!(),
+            TokenKind::BraceRoundOpen => wrap_lhs!(Expression::Grouping, self.parse_grouping_expression()?),
             TokenKind::BraceRoundClose => return Err(unexpected_token_error!(token)),
             TokenKind::If => todo!(),
             TokenKind::Else => return Err(unexpected_token_error!(token)),
@@ -208,6 +214,33 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Some(lhs))
+    }
+
+    fn parse_grouping_expression(&mut self) -> Result<GroupingExpression, ParserError> {
+        let token = peek_assert_token!(self, BraceRoundOpen).clone();
+        let span = Span::start_from(token.start);
+
+        self.advance_and_skip_whitespace();
+
+        let expression = self.pratt_parse_expression(0)?.ok_or(ParserError {
+            message: "Expected expression".to_string(),
+            position: token.end,
+        })?;
+
+        self.skip_whitespace();
+
+        let token = peek_token!(self).clone();
+        
+        if token.kind != TokenKind::BraceRoundClose {
+            return Err(unexpected_token_error!(token, "Expected ')'"));
+        }
+
+        self.advance();
+
+        Ok(GroupingExpression {
+            span: Box::new(span.extend(token.end)),
+            expression: Box::new(expression),
+        })
     }
 
     fn parse_literal_expression(&mut self) -> Result<LiteralExpression, ParserError> {

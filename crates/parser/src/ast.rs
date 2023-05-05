@@ -25,6 +25,7 @@ pub enum Expression {
     Block(Box<BlockExpression>),
     Break(Box<BreakExpression>),
     Identifier(Box<IdentifierExpression>),
+    Grouping(Box<GroupingExpression>),
 }
 
 impl Expression {
@@ -37,6 +38,7 @@ impl Expression {
             Expression::Block(expression) => &expression.span,
             Expression::Break(expression) => &expression.span,
             Expression::Identifier(expression) => &expression.span,
+            Expression::Grouping(expression) => &expression.span,
         }
     }
 }
@@ -240,4 +242,10 @@ impl FromToken for IdentifierExpression {
             }
         )
     }
+}
+
+#[derive(Debug)]
+pub struct GroupingExpression {
+    pub span: Box<Span>,
+    pub expression: Box<Expression>,
 }

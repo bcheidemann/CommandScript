@@ -5,7 +5,7 @@ use lexer::default_lexer;
 use parser::Parser;
 
 fn main() {
-    let source = "1 + 2 * 3 / a.b.c - some_variable";
+    let source = "1 + (2 + 1) * 3 / a.b.c - some_variable";
 
     let result = default_lexer().lex(&source);
 
