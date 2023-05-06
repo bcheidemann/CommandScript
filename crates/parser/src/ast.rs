@@ -24,21 +24,23 @@ pub enum Expression {
     Block(Box<BlockExpression>),
     Literal(Box<LiteralExpression>),
     Identifier(Box<IdentifierExpression>),
+    Call(Box<CallExpression>),
     If(Box<IfExpression>),
     Break(Box<BreakExpression>),
 }
 
 impl Expression {
-    pub fn span(&self) -> &Span {
+    pub fn span(&self) -> Span {
         match self {
-            Expression::Infix(expression) => &expression.span,
-            Expression::Prefix(expression) => &expression.span,
-            Expression::Grouping(expression) => &expression.span,
-            Expression::Block(expression) => &expression.span,
-            Expression::Literal(expression) => &expression.span,
-            Expression::Identifier(expression) => &expression.span,
-            Expression::If(expression) => &expression.span,
-            Expression::Break(expression) => &expression.span,
+            Expression::Infix(expression) => *expression.span,
+            Expression::Prefix(expression) => *expression.span,
+            Expression::Grouping(expression) => *expression.span,
+            Expression::Block(expression) => *expression.span,
+            Expression::Literal(expression) => *expression.span,
+            Expression::Identifier(expression) => *expression.span,
+            Expression::Call(expression) => *expression.span,
+            Expression::If(expression) => *expression.span,
+            Expression::Break(expression) => *expression.span,
         }
     }
 }
@@ -181,6 +183,26 @@ impl InfixOperatorKind {
 }
 
 #[derive(Debug)]
+pub enum PostfixOperatorKind {
+    BraceSquareOpen,
+    BraceRoundOpen,
+}
+
+impl PostfixOperatorKind {
+    pub fn try_from_token(token: &Token) -> Option<Self> {
+        match token.kind {
+            TokenKind::BraceSquareOpen => Some(Self::BraceSquareOpen),
+            TokenKind::BraceRoundOpen => Some(Self::BraceRoundOpen),
+            _ => None,
+        }
+    }
+
+    pub fn postfix_binding_power(&self) -> (u8, ()) {
+        (8, ())
+    }
+}
+
+#[derive(Debug)]
 pub struct PrefixExpression {
     pub span: Box<Span>,
     pub operator: PrefixOperatorKind,
@@ -210,9 +232,16 @@ impl PrefixOperatorKind {
 }
 
 #[derive(Debug)]
+pub struct CallExpression {
+    pub span: Box<Span>,
+    pub callee: Box<Expression>,
+    pub arguments: Box<Vec<Expression>>,
+}
+
+#[derive(Debug)]
 pub struct IfExpression {
     pub span: Box<Span>,
-    pub conditions: Vec<IfCondition>,
+    pub conditions: Box<Vec<IfCondition>>,
     pub default: Option<Box<IfDefault>>,
 }
 
@@ -232,7 +261,7 @@ pub struct IfDefault {
 #[derive(Debug)]
 pub struct BlockExpression {
     pub span: Box<Span>,
-    pub expressions: Vec<Expression>,
+    pub expressions: Box<Vec<Expression>>,
 }
 
 #[derive(Debug)]

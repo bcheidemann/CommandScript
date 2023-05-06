@@ -45,14 +45,19 @@ sayHi()
 
 
 // Function With Args
-add = (arg1, arg2) {
+// TODO: Differentiate function declaration from grouping. Rust syntax maybe |arg1 arg2| { ... }?
+add = (arg1 arg2) {
   return arg1 + arg2
 }
 
-add(40, 2)
+add(40 2)
 
 
 // Simple Object
+// TODO: Object syntax needs to be differentiated from a block with implicit return
+// Currently this would evaluate to `object = "World"`
+// Is there a difference between an object and a scope?
+// Maybe `parent_object = <> { hello = "Hello" world = "World" } greeting_object = <parent_object> { greeting = hello + " " + world }`?
 object = {
   hello = "Hello"
   world = "World"
@@ -80,7 +85,8 @@ total = {
 }
 
 // Class
-person = (firstName, lastName) {
+// TODO: Distinguish between block with implicit return and returning a scope
+person = (firstName lastName) {
   fullName = () {
     return "{{ firstName }} {{ lastName }}"
   }

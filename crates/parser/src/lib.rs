@@ -1,9 +1,9 @@
-use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind, BlockExpression, IfExpression};
+use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind, BlockExpression, IfExpression, CallExpression};
 use from_token::FromToken;
 use lexer::token::{Token, TokenKind};
 use parser_error::ParserError;
 
-use crate::{ast::{InfixOperatorKind, IfCondition, IfDefault}, span::Span};
+use crate::{ast::{InfixOperatorKind, IfCondition, IfDefault, PostfixOperatorKind}, span::Span};
 
 mod from_token;
 
@@ -45,6 +45,19 @@ macro_rules! peek_token {
             },
         })?
     };
+}
+
+macro_rules! assert_token {
+    ($self:ident, $kind:ident) => {
+        let token = peek_token!($self);
+
+        assert!(
+            token.kind == TokenKind::$kind,
+            "Expected token of kind {}, found token of kind {}",
+            stringify!($kind),
+            token.kind
+        );
+    }
 }
 
 macro_rules! peek_assert_token {
@@ -202,42 +215,85 @@ impl<'a> Parser<'a> {
             TokenKind::Return => todo!(),
         };
 
-
-        self.skip_whitespace();
-
         loop {
+            self.skip_whitespace();
+
             let token = match self.peek() {
                 Some(token) => token.clone(),
                 None => break,
             };
 
-            let operator = match InfixOperatorKind::try_from_token(&token) {
-                Some(operator) => operator,
-                None => break,
-            };
+            if let Some(operator) = PostfixOperatorKind::try_from_token(&token) {
+                let (l_bp, ()) = operator.postfix_binding_power();
 
-            let (l_bp, r_bp) = operator.binding_power();
+                if l_bp < min_bp {
+                    break;
+                }
 
-            if l_bp < min_bp {
-                break;
+                lhs = match operator {
+                    PostfixOperatorKind::BraceSquareOpen => todo!(),
+                    PostfixOperatorKind::BraceRoundOpen => Expression::Call(Box::new(self.parse_call_expression(lhs)?)),
+                }
             }
 
-            self.advance_and_skip_whitespace();
+            else if let Some(operator) = InfixOperatorKind::try_from_token(&token) {
+                let (l_bp, r_bp) = operator.binding_power();
 
-            let rhs = match self.pratt_parse_expression(r_bp)? {
-                Some(rhs) => rhs,
-                None => return Err(expected_expression_error!(token)),
-            };
+                if l_bp < min_bp {
+                    break;
+                }
 
-            lhs = Expression::Infix(Box::new(InfixExpression {
-                span: Box::new(span.extend(rhs.span().end)),
-                left: Box::new(lhs),
-                operator,
-                right: Box::new(rhs),
-            }));
+                self.advance_and_skip_whitespace();
+
+                let rhs = match self.pratt_parse_expression(r_bp)? {
+                    Some(rhs) => rhs,
+                    None => return Err(expected_expression_error!(token)),
+                };
+
+                lhs = Expression::Infix(Box::new(InfixExpression {
+                    span: Box::new(span.extend(rhs.span().end)),
+                    left: Box::new(lhs),
+                    operator,
+                    right: Box::new(rhs),
+                }));
+            }
+
+            else { break };
         }
 
         Ok(Some(lhs))
+    }
+
+    fn parse_call_expression(&mut self, callee: Expression) -> Result<CallExpression, ParserError> {
+        assert_token!(self, BraceRoundOpen);
+        let span = callee.span();
+
+        self.advance_and_skip_whitespace();
+
+        let mut arguments = vec![];
+
+        loop {
+            let token = peek_token!(self).clone();
+
+            if token.kind == TokenKind::BraceRoundClose {
+                self.advance();
+
+                return Ok(CallExpression {
+                    span: Box::new(span.extend(token.end)),
+                    callee: Box::new(callee),
+                    arguments: Box::new(arguments),
+                });
+            }
+
+            // TODO: If parse error is returned, advance to the next newline token
+            //       and collect the error in a vector of errors to be returned
+            let expression = self.parse_expression()?;
+
+            // Skip whitespace and newlines
+            if let Some(expression) = expression {
+                arguments.push(expression);
+            }
+        }
     }
 
     fn parse_block_expression(&mut self) -> Result<BlockExpression, ParserError> {
@@ -256,7 +312,7 @@ impl<'a> Parser<'a> {
 
                 return Ok(BlockExpression {
                     span: Box::new(span.extend(token.end)),
-                    expressions,
+                    expressions: Box::new(expressions),
                 });
             }
 
@@ -403,7 +459,7 @@ impl<'a> Parser<'a> {
 
         Ok(IfExpression {
             span: Box::new(outer_span),
-            conditions,
+            conditions: Box::new(conditions),
             default,
         })
     }
