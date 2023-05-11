@@ -293,6 +293,10 @@ impl<'a> Parser<'a> {
             if let Some(expression) = expression {
                 arguments.push(expression);
             }
+
+            // Consume comma if it exists
+            self.skip_whitespace();
+            self.try_consume_token(TokenKind::Comma);
         }
     }
 
@@ -501,5 +505,16 @@ impl<'a> Parser<'a> {
     fn advance_and_skip_whitespace(&mut self) {
         self.advance();
         self.skip_whitespace();
+    }
+
+    fn try_consume_token(&mut self, kind: TokenKind) -> Option<Token> {
+        let token = self.peek()?.clone();
+
+        if token.kind == kind {
+            self.advance();
+            return Some(token.clone());
+        }
+
+        None
     }
 }
