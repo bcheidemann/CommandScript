@@ -83,77 +83,28 @@ impl Reader for KeywordReader {
     }
 
     fn read(&self, state: &mut ReaderState) -> ReaderResult {
-        if let Some(_) = state.read_str("if") {
-            return ReaderResult::Token(Token {
-                kind: TokenKind::If,
-                start: state.get_start(),
-                end: state.get_position(),
-                value: TokenValue::None,
-            });
+        macro_rules! read_keyword {
+            ($state:ident, $keyword:expr, $kind:expr) => {{
+                if let Some(_) = $state.read_str($keyword) {
+                    return ReaderResult::Token(Token {
+                        kind: $kind,
+                        start: $state.get_start(),
+                        end: $state.get_position(),
+                        value: TokenValue::None,
+                    });
+                }
+            }};
         }
 
-        if let Some(_) = state.read_str("else") {
-            return ReaderResult::Token(Token {
-                kind: TokenKind::Else,
-                start: state.get_start(),
-                end: state.get_position(),
-                value: TokenValue::None,
-            });
-        }
-
-        if let Some(_) = state.read_str("for") {
-            return ReaderResult::Token(Token {
-                kind: TokenKind::For,
-                start: state.get_start(),
-                end: state.get_position(),
-                value: TokenValue::None,
-            });
-        }
-
-        if let Some(_) = state.read_str("while") {
-            return ReaderResult::Token(Token {
-                kind: TokenKind::While,
-                start: state.get_start(),
-                end: state.get_position(),
-                value: TokenValue::None,
-            });
-        }
-
-        if let Some(_) = state.read_str("loop") {
-            return ReaderResult::Token(Token {
-                kind: TokenKind::Loop,
-                start: state.get_start(),
-                end: state.get_position(),
-                value: TokenValue::None,
-            });
-        }
-
-        if let Some(_) = state.read_str("break") {
-            return ReaderResult::Token(Token {
-                kind: TokenKind::Break,
-                start: state.get_start(),
-                end: state.get_position(),
-                value: TokenValue::None,
-            });
-        }
-
-        if let Some(_) = state.read_str("continue") {
-            return ReaderResult::Token(Token {
-                kind: TokenKind::Continue,
-                start: state.get_start(),
-                end: state.get_position(),
-                value: TokenValue::None,
-            });
-        }
-
-        if let Some(_) = state.read_str("return") {
-            return ReaderResult::Token(Token {
-                kind: TokenKind::Return,
-                start: state.get_start(),
-                end: state.get_position(),
-                value: TokenValue::None,
-            });
-        }
+        read_keyword!(state, "if", TokenKind::If);
+        read_keyword!(state, "else", TokenKind::Else);
+        read_keyword!(state, "for", TokenKind::For);
+        read_keyword!(state, "while", TokenKind::While);
+        read_keyword!(state, "loop", TokenKind::Loop);
+        read_keyword!(state, "break", TokenKind::Break);
+        read_keyword!(state, "continue", TokenKind::Continue);
+        read_keyword!(state, "return", TokenKind::Return);
+        read_keyword!(state, "fn", TokenKind::Function);
 
         return ReaderResult::None;
     }

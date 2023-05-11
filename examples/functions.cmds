@@ -1,0 +1,19 @@
+// Functions with no parameters
+get_42 = fn () 42
+get_42() // 42
+
+// Functions with single parameters
+greet = fn (name) "Hello " + name + "!"
+greet = fn (name) {
+  "Hello " + name + "!"
+}
+greet = fn (name) {
+  return "Hello " + name + "!"
+}
+greet("World") // Hello World!
+
+// Functions with multiple parameters
+get_area_of_rectangle = fn (width height) width * height
+get_area_of_rectangle = fn (width, height) width * height
+get_area_of_rectangle(10, 20) // 200
+

@@ -1,4 +1,4 @@
-use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind, BlockExpression, IfExpression, CallExpression};
+use ast::{BreakExpression, Expression, InfixExpression, LiteralExpression, Program, IdentifierExpression, GroupingExpression, PrefixExpression, PrefixOperatorKind, BlockExpression, IfExpression, CallExpression, FunctionDeclarationExpression};
 use from_token::FromToken;
 use lexer::token::{Token, TokenKind};
 use parser_error::ParserError;
@@ -28,9 +28,36 @@ macro_rules! unexpected_token_error {
 
 macro_rules! expected_expression_error {
     ($token:expr) => {
+        expected_expression_at_error!($token.end)
+    };
+}
+
+macro_rules! expected_expression_at_error {
+    ($at:expr) => {
         ParserError {
             message: "Expected expression".to_string(),
-            position: $token.end,
+            position: $at,
+        }
+    };
+    ($at:expr, $message:expr) => {
+        ParserError {
+            message: format!("Expected expression: {}", $message),
+            position: $at,
+        }
+    };
+}
+
+macro_rules! unexpected_expression_at_error {
+    ($at:expr) => {
+        ParserError {
+            message: format!("Unexpected expression at {}", $at),
+            position: $at,
+        }
+    };
+    ($at:expr, $message:expr) => {
+        ParserError {
+            message: format!("Unexpected expression at {}: {}", $at, $message),
+            position: $at,
         }
     };
 }
@@ -213,6 +240,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::Continue => todo!(),
             TokenKind::Return => todo!(),
+            TokenKind::Function => wrap_lhs!(Expression::FunctionDeclaration, self.parse_function_declaration_expression()?),
         };
 
         loop {
@@ -483,6 +511,55 @@ impl<'a> Parser<'a> {
         todo!("Parse break expression");
     }
 
+    fn parse_function_declaration_expression(&mut self) -> Result<FunctionDeclarationExpression, ParserError> {
+        let token = peek_assert_token!(self, Function).clone();
+        let mut outer_span = Span::start_from(token.start);
+
+        self.advance_and_skip_whitespace();
+
+        self.consume_token(TokenKind::BraceRoundOpen)?;
+
+        let mut parameters = vec![];
+
+        loop {
+            self.skip_whitespace();
+
+            let token = peek_token!(self).clone();
+            outer_span = outer_span.extend(token.end);
+
+            if token.kind == TokenKind::BraceRoundClose {
+                self.advance();
+
+                break;
+            }
+
+            let parameter = {
+                let expression = self.parse_expression()?.ok_or(expected_expression_error!(token))?;
+
+                match expression {
+                    Expression::Identifier(identifier_expression) => *identifier_expression,
+                    _ => return Err(unexpected_expression_at_error!(expression.span().start, format!("Expected identifier or ')' but found {} expression", expression.kind_name()))),
+                }
+            };
+
+            outer_span = outer_span.extend(parameter.span.end);
+            parameters.push(parameter);
+
+            self.skip_whitespace();
+
+            // Optionally consume a comma
+            self.try_consume_token(TokenKind::Comma);
+        }
+
+        let body = self.parse_expression()?.ok_or(expected_expression_at_error!(outer_span.end))?;
+
+        Ok(FunctionDeclarationExpression {
+            span: Box::new(outer_span.extend(body.span().end)),
+            parameters: Box::new(parameters),
+            body: Box::new(body),
+        })
+    }
+
     // === Helpers ===
 
     fn peek(&self) -> Option<&Token> {
@@ -516,5 +593,17 @@ impl<'a> Parser<'a> {
         }
 
         None
+    }
+
+    fn consume_token(&mut self, kind: TokenKind) -> Result<Token, ParserError> {
+        let token = peek_token!(self).clone();
+
+        if token.kind != kind {
+            return Err(unexpected_token_error!(token, format!("Expected '{}'", kind)));
+        }
+
+        self.advance();
+
+        Ok(token)
     }
 }

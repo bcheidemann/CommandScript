@@ -1,4 +1,4 @@
-sayHello = (name) {
+sayHello = fn (name) {
   $ echo "Hello {{ name }}!"
 }
 

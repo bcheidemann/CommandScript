@@ -58,6 +58,7 @@ pub enum TokenKind {
     Break,
     Continue,
     Return,
+    Function,
     Whitespace,
 }
 

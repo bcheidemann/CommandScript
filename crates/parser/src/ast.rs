@@ -27,6 +27,7 @@ pub enum Expression {
     Call(Box<CallExpression>),
     If(Box<IfExpression>),
     Break(Box<BreakExpression>),
+    FunctionDeclaration(Box<FunctionDeclarationExpression>),
 }
 
 impl Expression {
@@ -41,6 +42,22 @@ impl Expression {
             Expression::Call(expression) => *expression.span,
             Expression::If(expression) => *expression.span,
             Expression::Break(expression) => *expression.span,
+            Expression::FunctionDeclaration(expression) => *expression.span,
+        }
+    }
+
+    pub fn kind_name(&self) -> String {
+        match self {
+            Expression::Infix(_) => "infix".to_string(),
+            Expression::Prefix(_) => "prefix".to_string(),
+            Expression::Grouping(_) => "grouping".to_string(),
+            Expression::Block(_) => "block".to_string(),
+            Expression::Literal(_) => "literal".to_string(),
+            Expression::Identifier(_) => "identifier".to_string(),
+            Expression::Call(_) => "call".to_string(),
+            Expression::If(_) => "if".to_string(),
+            Expression::Break(_) => "break".to_string(),
+            Expression::FunctionDeclaration(_) => "function declaration".to_string(),
         }
     }
 }
@@ -292,4 +309,11 @@ impl FromToken for IdentifierExpression {
 pub struct GroupingExpression {
     pub span: Box<Span>,
     pub expression: Box<Expression>,
+}
+
+#[derive(Debug)]
+pub struct FunctionDeclarationExpression {
+    pub span: Box<Span>,
+    pub parameters: Box<Vec<IdentifierExpression>>,
+    pub body: Box<Expression>,
 }
