@@ -1,7 +1,5 @@
-sayHello = fn (name) {
-  $ echo "Hello {{ name }}!"
+say_hello = fn (name) {
+  echo("Hello " + name + "!")
 }
 
-sayHello("Ben")
-
-return 0
+say_hello("Ben")
