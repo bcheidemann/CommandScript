@@ -126,6 +126,7 @@ pub struct InfixExpression {
 
 #[derive(Debug, Clone, Copy)]
 pub enum InfixOperatorKind {
+    Equals,
     EqualsEquals,
     BangEquals,
     LessThan,
@@ -138,6 +139,7 @@ pub enum InfixOperatorKind {
     AmpersandAmpersand,
     Pipe,
     PipePipe,
+    ColonEquals,
     Dot,
     DotDot,
     Plus,
@@ -151,6 +153,7 @@ pub enum InfixOperatorKind {
 impl InfixOperatorKind {
     pub fn try_from_token(token: &Token) -> Option<Self> {
         match token.kind {
+            TokenKind::Equals => Some(Self::Equals),
             TokenKind::EqualsEquals => Some(Self::EqualsEquals),
             TokenKind::BangEquals => Some(Self::BangEquals),
             TokenKind::LessThan => Some(Self::LessThan),
@@ -163,6 +166,7 @@ impl InfixOperatorKind {
             TokenKind::AmpersandAmpersand => Some(Self::AmpersandAmpersand),
             TokenKind::Pipe => Some(Self::Pipe),
             TokenKind::PipePipe => Some(Self::PipePipe),
+            TokenKind::ColonEquals => Some(Self::ColonEquals),
             TokenKind::Dot => Some(Self::Dot),
             TokenKind::DotDot => Some(Self::DotDot),
             TokenKind::Plus => Some(Self::Plus),
@@ -177,6 +181,7 @@ impl InfixOperatorKind {
 
     pub fn binding_power(&self) -> (u8, u8) {
         match self {
+            InfixOperatorKind::Equals => (2, 1),
             InfixOperatorKind::EqualsEquals => todo!(),
             InfixOperatorKind::BangEquals => todo!(),
             InfixOperatorKind::LessThan => todo!(),
@@ -189,10 +194,11 @@ impl InfixOperatorKind {
             InfixOperatorKind::AmpersandAmpersand => todo!(),
             InfixOperatorKind::Pipe => todo!(),
             InfixOperatorKind::PipePipe => todo!(),
+            InfixOperatorKind::ColonEquals => (2, 1),
             InfixOperatorKind::Dot => (7, 8),
             InfixOperatorKind::DotDot => todo!(),
-            InfixOperatorKind::Plus | InfixOperatorKind::Minus => (1, 2),
-            InfixOperatorKind::Slash | InfixOperatorKind::Star => (3, 4),
+            InfixOperatorKind::Plus | InfixOperatorKind::Minus => (3, 4),
+            InfixOperatorKind::Slash | InfixOperatorKind::Star => (5, 6),
             InfixOperatorKind::Caret => todo!(),
             InfixOperatorKind::Percent => todo!(),
         }
@@ -215,7 +221,7 @@ impl PostfixOperatorKind {
     }
 
     pub fn postfix_binding_power(&self) -> (u8, ()) {
-        (8, ())
+        (10, ())
     }
 }
 
@@ -244,7 +250,7 @@ impl PrefixOperatorKind {
     }
 
     pub fn prefix_binding_power(&self) -> ((), u8) {
-        ((), 6)
+        ((), 8)
     }
 }
 

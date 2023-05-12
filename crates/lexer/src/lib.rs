@@ -639,6 +639,31 @@ impl OperatorReader {
             }
         }
     }
+
+    fn read_colon(&self, state: &mut ReaderState) -> ReaderResult {
+        read_char!(state, ':');
+
+        match state.peek() {
+            Some('=') => {
+                state.read();
+
+                return ReaderResult::Token(Token {
+                    kind: TokenKind::ColonEquals,
+                    start: state.get_start(),
+                    end: state.get_position(),
+                    value: TokenValue::None,
+                });
+            }
+            _ => {
+                return ReaderResult::Token(Token {
+                    kind: TokenKind::Colon,
+                    start: state.get_start(),
+                    end: state.get_position(),
+                    value: TokenValue::None,
+                });
+            }
+        }
+    }
 }
 
 impl Reader for OperatorReader {
@@ -661,6 +686,7 @@ impl Reader for OperatorReader {
             '<' => self.read_less_than(state),
             '>' => self.read_greater_than(state),
             '.' => self.read_dot(state),
+            ':' => self.read_colon(state),
             ',' => self.get_readers_result(TokenKind::Comma, state),
             '(' => self.get_readers_result(TokenKind::BraceRoundOpen, state),
             ')' => self.get_readers_result(TokenKind::BraceRoundClose, state),

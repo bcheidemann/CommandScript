@@ -213,6 +213,8 @@ impl<'a> Parser<'a> {
             TokenKind::PipePipeEquals => return Err(unexpected_token_error!(token)),
             TokenKind::Pipe => return Err(unexpected_token_error!(token)),
             TokenKind::PipePipe => return Err(unexpected_token_error!(token)),
+            TokenKind::Colon => return Err(unexpected_token_error!(token)),
+            TokenKind::ColonEquals => return Err(unexpected_token_error!(token)),
             TokenKind::Dot => return Err(unexpected_token_error!(token)),
             TokenKind::DotDot => todo!(),
             TokenKind::Bang | TokenKind::Plus | TokenKind::Minus => {

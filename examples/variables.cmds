@@ -1,0 +1,15 @@
+// Variable declaration/initialisation
+a := 1
+
+// Variable assignment
+a = 2
+
+// Variable assignments and declarations are expressions
+echo(message = "hello world!") // hello world!
+echo(message := "hello world!") // hello world!
+
+// Variable assignments and declarations can be chained
+width := height := depth := 10
+// width := 10
+// height := 10
+// depth := 10

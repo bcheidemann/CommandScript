@@ -33,6 +33,8 @@ pub enum TokenKind {
     PipePipeEquals,
     Pipe,
     PipePipe,
+    Colon,
+    ColonEquals,
     Dot,
     DotDot,
     Bang,
